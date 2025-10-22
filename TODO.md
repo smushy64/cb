@@ -24,6 +24,7 @@
                       check for leading \\\\?\\
 ## Complete
 
+- [x] feat: replace local buffers with dynamically allocating string buffers
 - [x] improve: windows: replace wide string functions
     - [x] wcscmp
     - [x] wcslen

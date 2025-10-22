@@ -214,20 +214,9 @@
 /// @brief Maximum path length.
 #define CB_MAX_PATH (4096)
 
-#if !defined(CB_LOCAL_SIZE)
-    /// @brief Local buffer size.
-    #define CB_LOCAL_SIZE (4096)
-#endif
-
 #if !defined(CB_LOCAL_COUNT)
     /// @brief Local buffer count.
     #define CB_LOCAL_COUNT (8)
-#endif
-
-#if CB_LOCAL_SIZE < 256
-    #undef CB_LOCAL_SIZE
-    /// @brief Local buffer size.
-    #define CB_LOCAL_SIZE (256)
 #endif
 
 #if CB_LOCAL_COUNT < 4
@@ -1352,9 +1341,13 @@ CB_DEF void* _F(mem_move)( void* dst, const void* src, size_t size );
 /// @return @c buf.
 CB_DEF void* _F(mem_set)( void* buf, uint8_t byte, size_t size );
 
-/// @brief Get a local buffer.
+/// @brief Get next local buffer.
 /// @return Local byte buffer.
-CB_DEF _T(ByteBuf) _F(local_buf)(void);
+CB_DEF _T(ByteBuf)* _F(local_buf)(void);
+/// @brief Allocate memory from next local buffer.
+/// @param size Number of bytes to allocate.
+/// @return Allocated memory. Does not need to be freed.
+CB_DEF char* _F(local_alloc)( size_t size );
 /// @brief Write a formatted string to local buffer.
 /// @param[in] fmt Format string.
 /// @param     va  Variadic format string arguments.
@@ -2257,10 +2250,10 @@ CB_INL bool _F(path_query_time_modify)( const char* path, _T(Time)* out_time ) {
 }
 
 CB_INL const char* _F(path_canonicalize)( const char* path ) {
-    _T(StringBuf) l = _F(local_buf)(); 
-    _F(path_canonicalize_buf)( &l, path );
-    CB_BUF_PUSH( &l, 0 );
-    return l.ptr;
+    _T(StringBuf)* l = _F(local_buf)(); 
+    _F(path_canonicalize_buf)( l, path );
+    CB_BUF_PUSH( l, 0 );
+    return l->ptr;
 }
 
 CB_INL size_t _F(file_query_size)( _T(File)* file ) {
@@ -2381,7 +2374,7 @@ struct __CbState {
 
     _T(File) h_stdout, h_stderr, h_stdin;
 
-    char     local_buffer[CB_LOCAL_COUNT][CB_LOCAL_SIZE];
+    _T(StringBuf) local_buffer[CB_LOCAL_COUNT];
     uint32_t local_index;
 
     _T(StringBuf) platform_buf;
@@ -2412,11 +2405,11 @@ struct __CbState {
     .h_stdin               = CB_STRUCT(_T(File), .opaque_ptr = NULL),
     .out_handles_obtained  = false,
 #endif
-    .local_buffer          = {},
+    .local_buffer          = {0},
     .local_index           = 0,
-    .platform_buf          = {},
+    .platform_buf          = {0},
     .cwd_set               = false,
-    .cwd                   = {},
+    .cwd                   = {0},
     .level                 = _E(LOG_INFO),
 #if CB_OS_IS_POSIX
     .ftw                   = {},
@@ -2690,22 +2683,38 @@ void* _F(mem_set)( void* buf, uint8_t byte, size_t size ) {
     return memset( buf, byte, size );
 }
 
-_T(ByteBuf) _F(local_buf)(void) {
-    _T(ByteBuf) result = {};
-
+_T(ByteBuf) * _F(local_buf)(void) {
     uint32_t index = (cbs.local_index++) % CB_LOCAL_COUNT;
 
-    result.ptr = _F(mem_set)( cbs.local_buffer[index], 0, CB_LOCAL_SIZE );
-    result.cap = CB_LOCAL_SIZE;
+    _T(ByteBuf) * result = cbs.local_buffer + index;
+
+    if( result->ptr ) {
+        _F(mem_set)( result->ptr, 0, result->len );
+    }
+    result->len = 0;
 
     return result;
 }
+char* _F(local_alloc)( size_t size ) {
+    _T(ByteBuf)* buf = _F(local_buf)();
+
+    CB_BUF_RESERVE( buf, size );
+
+    return buf->ptr;
+}
 const char* _F(local_fmt_va)( const char* fmt, va_list va ) {
-    _T(ByteBuf) buf = _F(local_buf)();
+    va_list va2;
+    va_copy( va2, va );
 
-    vsnprintf( buf.ptr, buf.cap, fmt, va );
+    size_t required = vsnprintf( NULL, 0, fmt, va2 );
 
-    return buf.ptr;
+    va_end( va2 );
+
+    char* ptr = _F(local_alloc)( required );
+
+    vsnprintf( ptr, required, fmt, va );
+
+    return ptr;
 }
 const char* _F(local_fmt)( const char* fmt, ... ) {
     va_list va;
@@ -2717,11 +2726,9 @@ const char* _F(local_fmt)( const char* fmt, ... ) {
     return result;
 }
 const char* _F(local_path)( _T(String) string ) {
-    _T(ByteBuf) buf = _F(local_buf)();
-    if( string.len > buf.cap ) {
-        string.len = buf.cap - 1;
-    }
-    return _F(mem_copy)( buf.ptr, string.ptr, string.len );
+    char* result = _F(local_alloc)( string.len + 1 );
+
+    return _F(mem_copy)( result, string.ptr, string.len );
 }
 
 void _F(array_reverse)( void* base, size_t stride, size_t count, char* swap ) {
