@@ -1,0 +1,228 @@
+# TODO
+
+## Features
+
+- [ ] feat: multi-threading job queue
+- [ ] feat: compression/decompression
+- [ ] feat: base 64 encoding/decoding
+- [ ] feat: crc32 hashing
+- [ ] feat: md5 hashing
+- [ ] feat: sha1 hashing
+- [ ] feat: creating a virtual directory listing
+    - walk directory and create a list of items in a directory in alphabetical order
+- [ ] feat: string_find_rev and string_find_set_rev for UTF-8
+
+## Improvements
+
+- [ ] improve: windows: path canonicalize first converts to UTF-16 path then back to UTF-8,
+                          it should just canonicalize as UTF-8
+## Bugs
+
+- [ ] bug: windows: canonical path could end with a trailing path separator if it ends with . or ..
+- [ ] bug: windows: dir_cwd_set is limited to MAX_PATH
+                      because conversion from UTF-8 to UTF-16 doesn't
+                      check for leading \\\\?\\
+## Complete
+
+- [x] improve: windows: replace wide string functions
+    - [x] wcscmp
+    - [x] wcslen
+- [x] feat: windows: implementation
+- [x] bug: windows: dir_walk should allocate a new string buffer for converting between UTF-16/8
+- [x] feat: doxygen documentation
+
+## Implemented
+
+- [x] build_init
+- [x] build_rebuild
+- [x] float_cmp
+- [x] double_cmp
+- [x] mem_allocator_set
+- [x] mem_allocator_reset
+- [x] mem_alloc
+- [x] mem_realloc
+- [x] mem_free
+- [x] mem_cmp
+- [x] mem_copy
+- [x] mem_move
+- [x] mem_set
+- [x] local_buf
+- [x] local_fmt_va
+- [x] local_fmt
+- [x] local_path
+- [x] array_reverse
+- [x] cstr_len
+- [x] rune_from_cp8
+- [x] rune_is_ascii
+- [x] cp8_from_code_units
+- [x] cp8_from_string
+- [x] cp16_from_code_units
+- [x] cp32_from_code_units
+- [x] string_cmp
+- [x] string_find
+- [x] string_find_set
+- [x] string_find_phrase
+- [x] string_find_rev (ascii)
+- [x] string_find_set_rev (ascii)
+- [x] string_find_phrase_rev
+- [x] string_trim_leading_ws
+- [x] string_trim_trailing_ws
+- [x] string_trim_ws
+- [x] string_split
+- [x] string_unicode_len
+- [x] string_unicode_next
+- [x] string_unicode_index
+- [x] string_buf_fmt_va
+- [x] string_buf_fmt
+- [x] logger_level_set
+- [x] logger_level_check
+- [x] logger_output_va
+- [x] logger_output
+- [x] stdout_handle
+- [x] stderr_handle
+- [x] stdin_handle
+- [x] path_exists
+- [x] path_query_info
+- [x] path_query_file_type
+- [x] path_query_time_create
+- [x] path_query_time_modify
+- [x] path_canonicalize_buf
+- [x] path_canonicalize
+- [x] file_null
+- [x] file_is_null
+- [x] file_open
+- [x] file_close
+- [x] file_remove
+- [x] file_query_info
+- [x] file_query_type
+- [x] file_query_time_create
+- [x] file_query_time_modify
+- [x] file_query_size
+- [x] file_read
+- [x] file_read_entire
+- [x] file_write
+- [x] file_copy
+- [x] file_move
+- [x] file_seek
+- [x] file_write_fmt_va
+- [x] file_write_fmt
+- [x] file_which_is_newer
+- [x] file_check_dependencies
+- [x] dir_create
+- [x] dir_remove
+- [x] dir_copy
+- [x] dir_move
+- [x] dir_walk
+- [x] dir_cwd_query
+- [x] dir_cwd_set
+- [x] pipe_null
+- [x] pipe_is_null
+- [x] pipe_open
+- [x] pipe_close
+- [x] pipe_wait
+- [x] pipe_query
+- [x] cmd_reset
+- [x] cmd_add
+- [x] cmd_copy
+- [x] cmd_free
+- [x] proc_group_add
+- [x] proc_group_clean
+- [x] proc_group_free
+- [x] proc_group_join
+- [x] proc_null
+- [x] proc_is_null
+- [x] proc_discard
+- [x] proc_wait
+- [x] proc_signal
+- [x] proc_exists
+- [x] env_query
+- [x] env_set
+- [x] env_copy
+- [x] env_reset
+- [x] env_add
+- [x] env_append
+- [x] env_get
+- [x] env_remove
+- [x] env_deref
+- [x] env_free
+- [x] mt_sleep
+- [x] mt_yield
+- [x] mt_spinlock
+- [x] mt_barrier
+- [x] mt_add
+- [x] mt_incr
+- [x] mt_decr
+- [x] mt_exch
+- [x] mt_cmp_exch
+- [x] mtx_reset
+- [x] mtx_lock
+- [x] mtx_unlock
+- [x] semaphore_init
+- [x] semaphore_signal
+- [x] semaphore_wait
+- [x] time_now
+- [x] time_diff
+- [x] time_msec
+- [x] time_sec
+- [x] time_split_from_time
+- [x] time_from_time_split
+- [x] hash_elf
+- [x] hash_murmur2
+- [x] deps_set_target
+- [x] deps_add
+- [x] deps_reset
+- [x] deps_free
+- [x] deps_parse_makefile
+- [x] cfg_parse
+- [x] cfg_parse_from_memory
+- [x] cfg_serialize
+- [x] cfg_add
+- [x] cfg_read
+- [x] __cb_unused
+- [x] __cb_dir_create_many
+- [x] __cb_cmd_append
+- [x] __cb_exec
+
+### Implemented - Windows
+
+- [x] path_query_info
+- [x] path_canonicalize_buf
+- [x] file_open
+- [x] file_close
+- [x] file_remove
+- [x] file_query_info
+- [x] file_read
+- [x] file_write
+- [x] file_is_executable
+- [x] file_seek
+- [x] file_write_fmt_va
+- [x] dir_create
+- [x] dir_remove
+- [x] dir_walk
+- [x] dir_cwd_query
+- [x] dir_cwd_set
+- [x] __cb_platform_get_handles
+- [x] pipe_open
+- [x] pipe_close
+- [x] pipe_wait
+- [x] pipe_query
+- [x] proc_discard
+- [x] proc_wait
+- [x] proc_signal
+- [x] proc_exists
+- [x] env_query
+- [x] env_set
+- [x] env_copy
+- [x] mt_sleep
+- [x] mt_yield
+- [x] mt_barrier
+- [x] mt_add
+- [x] mt_exch
+- [x] mt_cmp_exch
+- [x] time_now
+- [x] time_msec
+- [x] time_sec
+- [x] time_split_from_time
+- [x] __cb_exec
+
+
