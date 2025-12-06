@@ -1551,6 +1551,36 @@ CB_DEF size_t _F(string_buf_fmt_va)( _T(StringBuf)* buf, const char* fmt, va_lis
 /// @return Length of formatted string.
 CB_DEF size_t _F(string_buf_fmt)( _T(StringBuf)* buf, const char* fmt, ... ) CB_FMT(2, 3);
 
+/// @brief Push string into string buffer and return its offset.
+/// @param[in] buf     Pointer to string buffer to append to.
+/// @param     opt_len (optional) Length of string to push.
+/// @param[in] ptr     Pointer to string.
+/// @return Offset of string.
+CB_DEF _T(StringOffset) _F(string_buf_offset)(
+    _T(StringBuf)* buf, size_t opt_len, const char* ptr );
+
+/// @brief Push formatted string into string buffer and return its offset.
+/// @param[in] buf Pointer to string buffer to append to.
+/// @param[in] fmt Format string.
+/// @param[in] va  Variadic format string arguments.
+/// @return Offset of string.
+CB_DEF _T(StringOffset) _F(string_buf_offset_fmt_va)(
+    _T(StringBuf)* buf, const char* fmt, va_list va ) CB_FMT(2, 0);
+
+/// @brief Push formatted string into string buffer and return its offset.
+/// @param[in] buf Pointer to string buffer to append to.
+/// @param[in] fmt Format string.
+/// @param[in] ... Format string arguments.
+/// @return Offset of string.
+CB_DEF _T(StringOffset) _F(string_buf_offset_fmt)(
+    _T(StringBuf)* buf, const char* fmt, ... ) CB_FMT(2, 3);
+
+/// @brief Dereference string offset.
+/// @param[in] buf Pointer to string buffer.
+/// @param     off Offset string to dereference.
+/// @return Dereferenced string.
+CB_DEF _T(String) _F(string_buf_offset_deref)( _T(StringBuf)* buf, _T(StringOffset) off );
+
 /// @brief Set logger level.
 /// @param level Logger level.
 /// @return Logger level.
@@ -3252,6 +3282,50 @@ size_t _F(string_buf_fmt)( _T(StringBuf)* buf, const char* fmt, ... ) {
     return result;
 }
 
+_T(StringOffset) _F(string_buf_offset)(
+    _T(StringBuf)* buf, size_t opt_len, const char* ptr
+) {
+    size_t len = opt_len;
+    if( !len ) {
+        len = _F(cstr_len)( ptr );
+    }
+
+    _T(StringOffset) result;
+    result.offset = buf->len;
+    result.len    = len;
+
+    CB_BUF_APPEND( buf, ptr, len );
+
+    return result;
+}
+
+_T(StringOffset) _F(string_buf_offset_fmt_va)(
+    _T(StringBuf)* buf, const char* fmt, va_list va
+) {
+    _T(StringOffset) result;
+    result.offset = buf->len;
+    result.len    = _F(string_buf_fmt_va)( buf, fmt, va );
+
+    return result;
+}
+
+_T(StringOffset) _F(string_buf_offset_fmt)(
+    _T(StringBuf)* buf, const char* fmt, ...
+) {
+    va_list va;
+    va_start( va, fmt );
+    _T(StringOffset) result = _F(string_buf_offset_fmt_va)( buf, fmt, va );
+    va_end( va );
+    return result;
+}
+
+_T(String) _F(string_buf_offset_deref)( _T(StringBuf)* buf, _T(StringOffset) off ) {
+    _T(String) result;
+    result.ptr = buf->ptr + off.offset;
+    result.len = off.len;
+    return result;
+}
+
 _T(LogLevel) _F(logger_level_set)( _T(LogLevel) level ) {
     return cbs.level = level;
 }
@@ -4374,7 +4448,8 @@ int __cb_nftw( const char* fpath, const struct stat* st, int typeflag, struct FT
     }
 
     if( state->skip_level >= 0 ) {
-        if( ftwbuf->level == state->skip_level ) {
+        // NOTE(alicia): skip all levels current to and beyond the current skip level
+        if( ftwbuf->level >= state->skip_level ) {
             return 0;
         } else {
             state->skip_level = -1;
@@ -4408,7 +4483,9 @@ int __cb_nftw( const char* fpath, const struct stat* st, int typeflag, struct FT
         case _E(DWA_CONTINUE): break;
         case _E(DWA_STOP):     return 1;
         case _E(DWA_SKIP): {
-            state->skip_level = ftwbuf->level + 1;
+            if( info.file_type == FT_DIR ) {
+                state->skip_level = ftwbuf->level + 1;
+            }
         } break;
     }
 
