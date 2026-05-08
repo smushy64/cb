@@ -19,7 +19,7 @@
 /// @brief Minor version.
 #define CB_VERSION_MINOR 1
 /// @brief Patch version.
-#define CB_VERSION_PATCH 0
+#define CB_VERSION_PATCH 1
 
 // NOTE(alicia): identifying current platform ---------------------------------
 
@@ -33,6 +33,13 @@
 #define CB_COMPILER_MSVC    3
 /// @brief Compiler count.
 #define CB_COMPILER_COUNT   4
+
+// IMPORTANT(alicia): C++ is not necessarily supported but
+// clangd often recognizes .h files as C++ so this silences
+// errors when using the restrict keyword
+#if __cplusplus
+    #define restrict __restrict
+#endif
 
 #define CB_COMPILER_CURRENT        CB_COMPILER_UNKNOWN
 #define CB_COMPILER_GNU_COMPATIBLE 0
@@ -2726,8 +2733,10 @@ _T(ByteBuf) * _F(local_buf)(void) {
     return result;
 }
 char* _F(local_alloc)( size_t size ) {
+    // buf is already empty
     _T(ByteBuf)* buf = _F(local_buf)();
 
+    // allocating required space
     CB_BUF_RESERVE( buf, size );
 
     return buf->ptr;
@@ -2736,13 +2745,16 @@ const char* _F(local_fmt_va)( const char* fmt, va_list va ) {
     va_list va2;
     va_copy( va2, va );
 
+    // excludes null!
     size_t required = vsnprintf( NULL, 0, fmt, va2 );
 
     va_end( va2 );
 
-    char* ptr = _F(local_alloc)( required );
+    // we need to allocate null
+    char* ptr = _F(local_alloc)( required + 1 );
 
-    vsnprintf( ptr, required, fmt, va );
+    // pointer can hold required + 1 for null
+    vsnprintf( ptr, required + 1, fmt, va );
 
     return ptr;
 }
